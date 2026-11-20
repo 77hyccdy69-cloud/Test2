@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rankly – Deine persönlichen Ranglisten</title>
+<meta name="theme-color" content="#0f1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏆%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-logo">🏆</span><span>Rankly</span></div>
+    <nav id="nav"></nav>
+    <button class="btn ghost full" id="addCatBtn">＋ Neue Kategorie</button>
+    <div class="side-foot">
+      <button class="btn ghost small" id="settingsBtn">⚙️ Einstellungen</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menü">☰</button>
+      <div class="title-wrap">
+        <h1 id="viewTitle"></h1>
+        <p id="viewSub" class="muted"></p>
+      </div>
+      <div class="tools" id="tools"></div>
+    </header>
+
+    <section class="searchbox" id="searchBox">
+      <div class="search-input">
+        <span>🔍</span>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="Titel suchen und zum Ranking hinzufügen …">
+        <button class="btn ghost small" id="manualBtn" title="Ohne Suche manuell anlegen">Manuell</button>
+      </div>
+      <div class="results" id="results" hidden></div>
+    </section>
+
+    <section id="content"></section>
+  </main>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" id="modalCard"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
