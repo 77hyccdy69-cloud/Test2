@@ -109,6 +109,21 @@ h1{margin:0;font-size:clamp(24px,4vw,34px);letter-spacing:-.02em}
 .score.mid{background:#c9a22733;border-color:#c9a227}
 .score.lo{background:#c0364f33;border-color:#c0364f}
 
+/* Kriterien */
+.crits{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.crit{display:grid;grid-template-columns:minmax(90px,1fr) 2fr 44px 24px;gap:8px;align-items:center;font-size:13.5px}
+.crit input[type=range]{width:100%;accent-color:var(--accent)}
+.crit input.unset{opacity:.4}
+.crit output{text-align:center;font-weight:700}
+.crit .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}
+.crits .total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:8px;font-weight:600}
+.crits .total b{font-size:22px}
+label.f.chk{display:flex;align-items:center;gap:8px;color:var(--text);font-size:14px}
+label.f.chk input{width:auto;margin:0}
+.done{color:#3fb97f;font-weight:600}
+.cl{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-size:12px;color:var(--muted)}
+.cl b{color:var(--text);font-weight:600}
+.tile .dn{position:absolute;right:8px;top:8px;background:#1f8a5b;color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-size:12px}
 /* Gallery */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
 .tile{position:relative;border-radius:12px;overflow:hidden;background:var(--panel);border:1px solid var(--line);cursor:pointer}
@@ -255,12 +270,20 @@ let S;
 function load() {
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch { S = null; }
   if (!S || !Array.isArray(S.categories)) S = defaults();
-  S.items = S.items || []; S.settings = S.settings || { tmdb: '', rawg: '' };
+  S.items = S.items || [];
+  S.items.forEach(i => {
+    if (!i.ratings) { const s = i.score ?? null; i.ratings = { story: s, chars: s, atmo: s, music: s }; }
+    if (i.done === undefined) i.done = false;
+  });
+  S.settings = S.settings || { tmdb: '', rawg: '' };
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
   catch { toast('⚠️ Speichern fehlgeschlagen (Speicher voll?)'); }
 }
+const CRIT = [['story', 'Story'], ['chars', 'Charakter Building'], ['atmo', 'Atmosphere'], ['music', 'Musik']];
+const fmt = n => n.toFixed(1).replace('.', ',');
+const calcScore = r => { const v = CRIT.map(([k]) => r[k]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
 const cat = id => S.categories.find(c => c.id === id);
 const manual = cid => S.items.filter(i => i.catId === cid).sort((a, b) => a.order - b.order);
 function ranked(c) {
@@ -396,7 +419,8 @@ window.phHTML = (title, cls) => {
   return `<div class="ph ${cls}" style="--c1:hsl(${h} 55% 45%);--c2:hsl(${(h + 50) % 360} 55% 30%)">${esc((title || '?').trim().charAt(0).toUpperCase())}</div>`;
 };
 const scoreCls = s => (s >= 8 ? 'hi' : s >= 5 ? 'mid' : 'lo');
-const scoreHTML = it => it.score == null ? '<span class="score none">unbewertet</span>' : `<span class="score ${scoreCls(it.score)}">★ ${it.score.toFixed(1).replace('.', ',')}</span>`;
+const scoreHTML = it => it.score == null ? '<span class="score none">unbewertet</span>' : `<span class="score ${scoreCls(it.score)}" title="Gesamtwertung">★ ${fmt(it.score)}</span>`;
+const critLine = it => { const r = it.ratings || {}; const p = CRIT.filter(([k]) => r[k] != null).map(([k, l]) => `<span>${l} <b>${fmt(r[k])}</b></span>`); return p.length ? `<div class="cl">${p.join('')}</div>` : ''; };
 const metaOf = it => [it.year, it.sub].filter(Boolean).join(' · ');
 
 /* ======================= Rendering ======================= */
@@ -435,7 +459,7 @@ function renderHome() {
   el.innerHTML = S.categories.map(c => {
     const l = ranked(c).slice(0, 8);
     return `<div class="home-cat"><h2 data-act="go" data-id="${c.id}" style="color:${c.color}">${esc(c.emoji)} ${esc(c.name)} <span class="muted" style="font-size:13px">→</span></h2>` +
-      (l.length ? `<div class="home-strip">${l.map((i, n) => `<div class="tile" data-act="open" data-id="${i.id}">${poster(i, 'im')}<span class="tn">${n + 1}</span><div class="ti">${esc(i.title)}</div></div>`).join('')}</div>`
+      (l.length ? `<div class="home-strip">${l.map((i, n) => `<div class="tile" data-act="open" data-id="${i.id}">${poster(i, 'im')}<span class="tn">${n + 1}</span>${i.done ? '<span class="dn">✓</span>' : ''}<div class="ti">${esc(i.title)}</div></div>`).join('')}</div>`
         : `<p class="muted">Noch leer – <a href="#" data-act="go" data-id="${c.id}" style="color:var(--accent)">ersten Eintrag hinzufügen</a></p>`) + `</div>`;
   }).join('');
 }
@@ -448,18 +472,18 @@ function renderCat(c) {
   }
   const drag = c.sort !== 'score' ? 'draggable="true" data-drag="1"' : '';
   if (c.view === 'grid') {
-    el.innerHTML = `<div class="grid">${list.map((i, n) => `<div class="tile" ${drag} data-act="open" data-id="${i.id}">${poster(i, 'im')}<span class="tn">${n + 1}</span><div class="ti">${esc(i.title)}</div></div>`).join('')}</div>`;
+    el.innerHTML = `<div class="grid">${list.map((i, n) => `<div class="tile" ${drag} data-act="open" data-id="${i.id}">${poster(i, 'im')}<span class="tn">${n + 1}</span>${i.done ? '<span class="dn">✓</span>' : ''}<div class="ti">${esc(i.title)}</div></div>`).join('')}</div>`;
     return;
   }
   let html = '';
   let rest = list, offset = 0;
   if (list.length >= 3) {
     const top = list.slice(0, 3); rest = list.slice(3); offset = 3;
-    html += `<div class="podium">${top.map((i, n) => `<div class="pod p${n + 1}" ${drag} data-act="open" data-id="${i.id}"><span class="medal">${n + 1}</span><span class="sc">${i.score != null ? scoreHTML(i) : ''}</span>${poster(i, 'pimg')}<div class="pinfo"><b>${esc(i.title)}</b><span class="muted">${esc(metaOf(i)) || '&nbsp;'}</span></div></div>`).join('')}</div>`;
+    html += `<div class="podium">${top.map((i, n) => `<div class="pod p${n + 1}" ${drag} data-act="open" data-id="${i.id}"><span class="medal">${n + 1}</span><span class="sc">${i.score != null ? scoreHTML(i) : ''}</span>${poster(i, 'pimg')}<div class="pinfo"><b>${esc(i.title)}</b><span class="muted">${esc(metaOf(i)) || '&nbsp;'}${i.done ? ' · <span class="done">✓</span>' : ''}</span></div></div>`).join('')}</div>`;
   }
   html += `<div class="list">${rest.map((i, n) => {
     const r = n + offset + 1;
-    return `<div class="row r${r}" ${drag} data-act="open" data-id="${i.id}"><div class="rank">${r}<small>Platz</small></div>${poster(i, 'pimg2')}<div class="info"><div class="t">${esc(i.title)}</div><div class="meta">${esc(metaOf(i))}</div><div class="d">${esc(i.desc)}</div></div>${scoreHTML(i)}</div>`;
+    return `<div class="row r${r}" ${drag} data-act="open" data-id="${i.id}"><div class="rank">${r}<small>Platz</small></div>${poster(i, 'pimg2')}<div class="info"><div class="t">${esc(i.title)}</div><div class="meta">${esc(metaOf(i))}${i.done ? `${metaOf(i) ? ' · ' : ''}<span class="done">✓ Abgeschlossen</span>` : ''}</div><div class="d">${esc(i.desc)}</div>${critLine(i)}</div>${scoreHTML(i)}</div>`;
   }).join('')}</div>`;
   el.innerHTML = html;
 }
@@ -502,6 +526,7 @@ function catModal(c) {
 function itemModal(item, isNew) {
   const c = cat(item.catId);
   const d = { ...item };
+  const rt = { story: null, chars: null, atmo: null, music: null, ...(item.ratings || {}) };
   const pos = manual(item.catId).findIndex(i => i.id === item.id) + 1 || manual(item.catId).length + 1;
   modal(`<h2>${isNew ? 'Neuer Eintrag' : 'Eintrag bearbeiten'}</h2>
     <div class="detail">
@@ -512,8 +537,8 @@ function itemModal(item, isNew) {
       <div>
         <label class="f">Titel<input id="dTitle" value="${esc(d.title)}"></label>
         <label class="f">Jahr / Zusatz<input id="dYear" value="${esc(d.year || '')}" placeholder="z. B. 2019"></label>
-        <div class="scorebar"><label class="f" style="margin:0"><input id="dNo" type="checkbox" ${d.score == null ? 'checked' : ''}> unbewertet</label>
-          <input id="dScore" type="range" min="0" max="10" step="0.5" value="${d.score ?? 7}" ${d.score == null ? 'disabled' : ''}><output id="dOut">${d.score == null ? '–' : d.score.toFixed(1)}</output></div>
+        <div class="crits">${CRIT.map(([k, l]) => `<div class="crit" data-k="${k}"><span>${l}</span><input type="range" min="0" max="10" step="0.5" value="${rt[k] ?? 5}" class="${rt[k] == null ? 'unset' : ''}" aria-label="${l}"><output>${rt[k] == null ? '–' : fmt(rt[k])}</output><button type="button" class="x" title="Zurücksetzen">×</button></div>`).join('')}<div class="total"><span>Gesamtwertung</span><b id="dTotal">${calcScore(rt) == null ? '–' : '★ ' + fmt(calcScore(rt))}</b></div></div>
+        <label class="f chk"><input id="dDone" type="checkbox" ${d.done ? 'checked' : ''}> Abgeschlossen (durchgeschaut / durchgespielt)</label>
         <label class="f">Kurzbeschreibung<textarea id="dDesc">${esc(d.desc)}</textarea></label>
         <label class="f">Meine Notiz<textarea id="dNote" style="min-height:60px" placeholder="Warum gefällt es dir?">${esc(d.note || '')}</textarea></label>
         <div style="display:flex;gap:10px">
@@ -534,8 +559,12 @@ function itemModal(item, isNew) {
     const f = e.target.files[0]; if (!f) return;
     d.image = await shrink(f); $('#dImg').value = ''; refreshCover();
   };
-  $('#dNo').onchange = e => { $('#dScore').disabled = e.target.checked; $('#dOut').textContent = e.target.checked ? '–' : (+$('#dScore').value).toFixed(1); };
-  $('#dScore').oninput = e => { $('#dOut').textContent = (+e.target.value).toFixed(1); };
+  const upTotal = () => { const s = calcScore(rt); $('#dTotal').textContent = s == null ? '–' : '★ ' + fmt(s); };
+  document.querySelectorAll('.crit').forEach(el => {
+    const k = el.dataset.k, inp = el.querySelector('input'), out = el.querySelector('output');
+    inp.oninput = () => { rt[k] = +inp.value; inp.classList.remove('unset'); out.textContent = fmt(rt[k]); upTotal(); };
+    el.querySelector('.x').onclick = () => { rt[k] = null; inp.value = 5; inp.classList.add('unset'); out.textContent = '–'; upTotal(); };
+  });
   const doRe = async () => {
     const box = $('#rRes'); box.hidden = false; box.innerHTML = '<div class="res-msg">Suche …</div>';
     const { results, failed } = await searchAll(cat($('#dCat').value).source, $('#rQ').value.trim());
@@ -554,7 +583,7 @@ function itemModal(item, isNew) {
     Object.assign(item, {
       title, year: $('#dYear').value.trim(), image: d.image || '', link: d.link || '',
       desc: $('#dDesc').value.trim(), note: $('#dNote').value.trim(),
-      score: $('#dNo').checked ? null : +$('#dScore').value,
+      ratings: { ...rt }, score: calcScore(rt), done: $('#dDone').checked,
     });
     if (isNew) { item.catId = catId; item.order = manual(catId).length; S.items.push(item); }
     else if (catId !== item.catId) { item.catId = catId; item.order = manual(catId).length; }
