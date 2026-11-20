@@ -111,11 +111,6 @@ h1{margin:0;font-size:clamp(24px,4vw,34px);letter-spacing:-.02em}
 
 /* Kriterien */
 .crits{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
-.crit{display:grid;grid-template-columns:minmax(90px,1fr) 2fr 44px 24px;gap:8px;align-items:center;font-size:13.5px}
-.crit input[type=range]{width:100%;accent-color:var(--accent)}
-.crit input.unset{opacity:.4}
-.crit output{text-align:center;font-weight:700}
-.crit .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}
 .crits .total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:8px;font-weight:600}
 .crits .total b{font-size:22px}
 label.f.chk{display:flex;align-items:center;gap:8px;color:var(--text);font-size:14px}
@@ -124,6 +119,31 @@ label.f.chk input{width:auto;margin:0}
 .cl{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-size:12px;color:var(--muted)}
 .cl b{color:var(--text);font-weight:600}
 .tile .dn{position:absolute;right:8px;top:8px;background:#1f8a5b;color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-size:12px}
+.crit{display:flex;flex-direction:column;gap:4px}
+.crit .top{display:flex;align-items:center;gap:8px}
+.crit .top span{flex:1;font-weight:600;font-size:15px}
+.crit .top output{font-size:22px;font-weight:800;min-width:56px;text-align:right}
+.crit .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:20px;width:32px;height:32px}
+.crit .ctl{display:flex;align-items:center;gap:12px}
+.crit .step{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:24px;line-height:1;cursor:pointer}
+.crit .step:active{background:var(--accent);color:#fff}
+.crit input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:44px;background:transparent;margin:0;cursor:pointer}
+.crit input[type=range]::-webkit-slider-runnable-track{height:14px;border-radius:7px;background:linear-gradient(to right,var(--accent) var(--p,50%),var(--line) var(--p,50%))}
+.crit input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:34px;height:34px;margin-top:-10px;border-radius:50%;background:#fff;border:4px solid var(--accent);box-shadow:0 2px 10px #0006}
+.crit input[type=range]::-moz-range-track{height:14px;border-radius:7px;background:var(--line)}
+.crit input[type=range]::-moz-range-progress{height:14px;border-radius:7px;background:var(--accent)}
+.crit input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:4px solid var(--accent)}
+.crit input.unset{opacity:.45}
+.crits{gap:16px;padding:14px}
+.mhead{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.mhead #dTitle{flex:1;min-width:0;font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.01em;background:transparent;border:0;border-bottom:2px solid var(--line);border-radius:0;padding:4px 0;color:var(--text);outline:0}
+.mhead #dTitle:focus{border-color:var(--accent)}
+.mhead #dYear{width:84px;flex:none;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center}
+.mbody{display:grid;grid-template-columns:120px 1fr;gap:14px;margin-bottom:14px}
+.mbody .cover{width:120px;height:180px;object-fit:cover;border-radius:10px;background:var(--panel2);display:block}
+.mbody .ph.cover{font-size:44px}
+.mbody textarea{width:100%;height:100%;min-height:180px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font-size:14px}
+.imgstat{font-size:11px;color:var(--muted);text-align:center;margin-top:4px;min-height:14px}
 /* Gallery */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
 .tile{position:relative;border-radius:12px;overflow:hidden;background:var(--panel);border:1px solid var(--line);cursor:pointer}
@@ -528,51 +548,58 @@ function itemModal(item, isNew) {
   const d = { ...item };
   const rt = { story: null, chars: null, atmo: null, music: null, ...(item.ratings || {}) };
   const pos = manual(item.catId).findIndex(i => i.id === item.id) + 1 || manual(item.catId).length + 1;
-  modal(`<h2>${isNew ? 'Neuer Eintrag' : 'Eintrag bearbeiten'}</h2>
-    <div class="detail">
-      <div><div id="dCover">${poster(d, 'cover')}</div>
-        <label class="f" style="margin-top:10px">Bild-URL<input id="dImg" value="${esc(d.image?.startsWith('data:') ? '' : d.image)}" placeholder="https://…"></label>
-        <label class="f">oder Bild hochladen<input id="dFile" type="file" accept="image/*"></label>
-      </div>
-      <div>
-        <label class="f">Titel<input id="dTitle" value="${esc(d.title)}"></label>
-        <label class="f">Jahr / Zusatz<input id="dYear" value="${esc(d.year || '')}" placeholder="z. B. 2019"></label>
-        <div class="crits">${CRIT.map(([k, l]) => `<div class="crit" data-k="${k}"><span>${l}</span><input type="range" min="0" max="10" step="0.5" value="${rt[k] ?? 5}" class="${rt[k] == null ? 'unset' : ''}" aria-label="${l}"><output>${rt[k] == null ? '–' : fmt(rt[k])}</output><button type="button" class="x" title="Zurücksetzen">×</button></div>`).join('')}<div class="total"><span>Gesamtwertung</span><b id="dTotal">${calcScore(rt) == null ? '–' : '★ ' + fmt(calcScore(rt))}</b></div></div>
-        <label class="f chk"><input id="dDone" type="checkbox" ${d.done ? 'checked' : ''}> Abgeschlossen (durchgeschaut / durchgespielt)</label>
-        <label class="f">Kurzbeschreibung<textarea id="dDesc">${esc(d.desc)}</textarea></label>
-        <label class="f">Meine Notiz<textarea id="dNote" style="min-height:60px" placeholder="Warum gefällt es dir?">${esc(d.note || '')}</textarea></label>
-        <div style="display:flex;gap:10px">
-          <label class="f" style="flex:1">Kategorie<select id="dCat">${S.categories.map(x => `<option value="${x.id}" ${x.id === d.catId ? 'selected' : ''}>${esc(x.emoji + ' ' + x.name)}</option>`).join('')}</select></label>
-          ${isNew ? '' : `<label class="f" style="width:110px">Platz<input id="dPos" type="number" min="1" max="${manual(item.catId).length}" value="${pos}" ${c.sort === 'score' ? 'disabled title="Automatische Sortierung nach Bewertung aktiv"' : ''}></label>`}
-        </div>
-        ${d.link ? `<p class="hint"><a href="${esc(d.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Quelle öffnen ↗</a></p>` : ''}
-      </div>
+  modal(`<div class="mhead"><input id="dTitle" value="${esc(d.title)}" placeholder="Titel" aria-label="Titel"><input id="dYear" value="${esc(d.year || '')}" placeholder="Jahr" aria-label="Jahr"></div>
+    <div class="mbody">
+      <div><div id="dCover">${poster(d, 'cover')}</div><div class="imgstat" id="dImgStat"></div></div>
+      <textarea id="dDesc" placeholder="Kurzbeschreibung" aria-label="Kurzbeschreibung">${esc(d.desc)}</textarea>
     </div>
-    <details style="margin-top:6px"><summary class="muted" style="cursor:pointer">🔄 Bild & Beschreibung neu suchen</summary>
+    <div class="crits">${CRIT.map(([k, l]) => `<div class="crit" data-k="${k}"><div class="top"><span>${l}</span><output>${rt[k] == null ? '–' : fmt(rt[k])}</output><button type="button" class="x" title="Zurücksetzen" aria-label="${l} zurücksetzen">×</button></div><div class="ctl"><button type="button" class="step" data-d="-0.5" aria-label="weniger">−</button><input type="range" min="0" max="10" step="0.5" value="${rt[k] ?? 5}" class="${rt[k] == null ? 'unset' : ''}" aria-label="${l}" style="--p:${(rt[k] ?? 5) * 10}%"><button type="button" class="step" data-d="0.5" aria-label="mehr">+</button></div></div>`).join('')}<div class="total"><span>Gesamtwertung</span><b id="dTotal">${calcScore(rt) == null ? '–' : '★ ' + fmt(calcScore(rt))}</b></div></div>
+    <label class="f chk"><input id="dDone" type="checkbox" ${d.done ? 'checked' : ''}> Abgeschlossen (durchgeschaut / durchgespielt)</label>
+    <label class="f">Meine Notiz<textarea id="dNote" style="min-height:60px" placeholder="Warum gefällt es dir?">${esc(d.note || '')}</textarea></label>
+    <div style="display:flex;gap:10px">
+      <label class="f" style="flex:1">Kategorie<select id="dCat">${S.categories.map(x => `<option value="${x.id}" ${x.id === d.catId ? 'selected' : ''}>${esc(x.emoji + ' ' + x.name)}</option>`).join('')}</select></label>
+      ${isNew ? '' : `<label class="f" style="width:110px">Platz<input id="dPos" type="number" min="1" max="${manual(item.catId).length}" value="${pos}" ${c.sort === 'score' ? 'disabled title="Automatische Sortierung nach Bewertung aktiv"' : ''}></label>`}
+    </div>
+    ${d.link ? `<p class="hint"><a href="${esc(d.link)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Quelle öffnen ↗</a></p>` : ''}
+    <details><summary class="muted" style="cursor:pointer">🔄 Anderes Bild / andere Beschreibung wählen</summary>
       <div class="search-input" style="margin-top:8px"><input id="rQ" value="${esc(d.title)}" type="search"><button class="btn small" id="rGo">Suchen</button></div>
       <div class="results" id="rRes" style="position:static;margin-top:8px;box-shadow:none" hidden></div></details>
     <div class="btn-row">${isNew ? '' : '<button class="btn danger" id="dDel" style="margin-right:auto">Löschen</button>'}<button class="btn ghost" data-act="close">Abbrechen</button><button class="btn" id="dSave">${isNew ? 'Hinzufügen' : 'Speichern'}</button></div>`);
 
-  const refreshCover = () => { $('#dCover').innerHTML = poster({ ...d, title: $('#dTitle').value || '?' }, 'cover'); };
-  $('#dImg').oninput = e => { d.image = e.target.value.trim(); refreshCover(); };
-  $('#dFile').onchange = async e => {
-    const f = e.target.files[0]; if (!f) return;
-    d.image = await shrink(f); $('#dImg').value = ''; refreshCover();
-  };
+  const refreshCover = () => { const el = $('#dCover'); if (el) el.innerHTML = poster({ ...d, title: $('#dTitle').value || '?' }, 'cover'); };
   const upTotal = () => { const s = calcScore(rt); $('#dTotal').textContent = s == null ? '–' : '★ ' + fmt(s); };
   document.querySelectorAll('.crit').forEach(el => {
     const k = el.dataset.k, inp = el.querySelector('input'), out = el.querySelector('output');
-    inp.oninput = () => { rt[k] = +inp.value; inp.classList.remove('unset'); out.textContent = fmt(rt[k]); upTotal(); };
-    el.querySelector('.x').onclick = () => { rt[k] = null; inp.value = 5; inp.classList.add('unset'); out.textContent = '–'; upTotal(); };
+    const setV = v => { v = Math.max(0, Math.min(10, v)); rt[k] = v; inp.value = v; inp.style.setProperty('--p', v * 10 + '%'); inp.classList.remove('unset'); out.textContent = fmt(v); upTotal(); };
+    inp.oninput = () => setV(+inp.value);
+    el.querySelectorAll('.step').forEach(b => { b.onclick = () => setV((rt[k] ?? 5) + +b.dataset.d); });
+    el.querySelector('.x').onclick = () => { rt[k] = null; inp.value = 5; inp.style.setProperty('--p', '50%'); inp.classList.add('unset'); out.textContent = '–'; upTotal(); };
   });
+  const apply = r => {
+    if (r.image) d.image = r.image;
+    if (r.link) d.link = r.link;
+    if (r.desc && (!$('#dDesc').value.trim() || r.force)) $('#dDesc').value = r.desc;
+    if (r.year && !$('#dYear').value.trim()) $('#dYear').value = r.year;
+    refreshCover();
+  };
+  // Automatisch Bild + Beschreibung suchen, wenn noch keins da ist
+  if (!d.image && d.title) {
+    $('#dImgStat').textContent = 'Suche Bild …';
+    findMeta(cat(d.catId).source, d.title).then(r => {
+      if (!$('#dImgStat')) return;
+      if (r.hit) { apply(r.hit); $('#dImgStat').textContent = r.hit.image ? '' : 'Kein Bild gefunden'; }
+      else $('#dImgStat').textContent = r.failed ? 'Offline – Bild später' : 'Kein Bild gefunden';
+    });
+  }
   const doRe = async () => {
     const box = $('#rRes'); box.hidden = false; box.innerHTML = '<div class="res-msg">Suche …</div>';
     const { results, failed } = await searchAll(cat($('#dCat').value).source, $('#rQ').value.trim());
     renderResults(box, results, failed, async r => {
+      const desc = r.desc || (r.lazyDesc ? await r.lazyDesc().catch(() => '') : '');
       d.image = r.image || d.image; d.link = r.link || d.link;
-      $('#dDesc').value = r.desc || (r.lazyDesc ? await r.lazyDesc().catch(() => '') : '') || $('#dDesc').value;
+      if (desc) $('#dDesc').value = desc;
       if (r.year) $('#dYear').value = r.year;
-      $('#dImg').value = d.image.startsWith('data:') ? '' : d.image; refreshCover(); box.hidden = true; toast('Bild & Beschreibung übernommen');
+      refreshCover(); box.hidden = true; toast('Bild & Beschreibung übernommen');
     });
   };
   $('#rGo').onclick = doRe;
@@ -591,7 +618,7 @@ function itemModal(item, isNew) {
       const ids = manual(catId).map(i => i.id).filter(i => i !== item.id);
       ids.splice(Math.max(0, Math.min(ids.length, (+$('#dPos').value || 1) - 1)), 0, item.id); setOrder(ids);
     }
-    save(); closeModal(); render();
+    save(); closeModal(); render(); backfill();
   };
   if (!isNew) $('#dDel').onclick = () => {
     if (!confirm(`„${item.title}“ löschen?`)) return;
@@ -638,6 +665,49 @@ function settingsModal() {
       S = j; S.settings = S.settings || { tmdb: '', rawg: '' }; save(); closeModal(); view = 'home'; render(); toast('Import erfolgreich');
     } catch { toast('⚠️ Ungültige Datei'); }
   };
+}
+
+
+/* Bild + Beschreibung zu einem Titel finden (mehrere Anläufe, bester Treffer bevorzugt) */
+const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim();
+function pickBest(results, title) {
+  const t = norm(title), withImg = results.filter(r => r.image);
+  return withImg.find(r => norm(r.title) === t) || withImg.find(r => norm(r.title).includes(t) || t.includes(norm(r.title))) || withImg[0] || null;
+}
+async function findMeta(source, title) {
+  let failed = true, first = null;
+  const short = title.split(/[:–(]| - /)[0].trim();
+  const attempts = [[source, title], ['wiki', title]];
+  if (short && short !== title) attempts.push([source, short], ['wiki', short]);
+  for (const [src, q] of attempts) {
+    const r = await searchAll(src, q);
+    if (!r.failed) failed = false;
+    first = first || r.results[0] || null;
+    const hit = pickBest(r.results, title);
+    if (hit) {
+      if (!hit.desc && hit.lazyDesc) hit.desc = await hit.lazyDesc().catch(() => '');
+      return { hit, failed: false };
+    }
+  }
+  return { hit: first, failed };
+}
+let backfilling = false;
+async function backfill() {
+  if (backfilling) return; backfilling = true;
+  try {
+    for (const it of S.items.filter(i => !i.image && !i.imgTried && i.title)) {
+      const c = cat(it.catId); if (!c) continue;
+      const r = await findMeta(c.source, it.title);
+      if (r.failed) break; // offline: später erneut versuchen
+      it.imgTried = true;
+      if (r.hit) {
+        it.image = r.hit.image || ''; it.link = it.link || r.hit.link || '';
+        if (!it.desc && r.hit.desc) it.desc = r.hit.desc;
+        if (!it.year && r.hit.year) it.year = r.hit.year;
+      }
+      save(); if ($('#modal').hidden) render();
+    }
+  } finally { backfilling = false; }
 }
 
 /* ======================= Suche ======================= */
@@ -726,6 +796,7 @@ document.addEventListener('dragend', () => { dragId = null; document.querySelect
 load();
 view = S.last || 'home';
 render();
+backfill();
 </script>
 </body>
 </html>
